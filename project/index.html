@@ -132,13 +132,45 @@
       .credits a { color: #e3b9ff; }
 
       .monster {
-        position: absolute;
-        z-index: 2;
-        top: 65px;
-        left: 50%;
-        font-size: 82px;
+        position: fixed;
+        z-index: 5;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        font-size: min(90vw, 90vh);
         filter: drop-shadow(0 0 18px #fa7aff);
+        pointer-events: none;
+      }
+
+      .monster.pop {
         animation: pop-out 500ms ease-out both;
+      }
+
+      .game-over {
+        position: fixed;
+        z-index: 10;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        overflow: hidden;
+        background: radial-gradient(circle, #542044, #100817 75%);
+        color: #fff3df;
+        text-align: center;
+      }
+
+      .game-over-clown {
+        font-size: min(60vmin, 600px);
+        line-height: 1;
+        animation: clown-pop 700ms ease-out both;
+      }
+
+      .game-over h2 {
+        margin: 0;
+        font-size: clamp(2rem, 6vw, 4rem);
       }
 
       .hidden { display: none; }
@@ -160,8 +192,13 @@
       .choice:focus-visible { outline: 3px solid #f5cc7a; outline-offset: 3px; }
 
       @keyframes pop-out {
-        from { opacity: 0; transform: translate(-50%, 70px) scale(.2); }
-        to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        from { opacity: 0; transform: scale(.2); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      @keyframes clown-pop {
+        from { opacity: 0; transform: scale(.2) rotate(-12deg); }
+        to { opacity: 1; transform: scale(1) rotate(0); }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -217,6 +254,11 @@
         Animal images from the project gallery.
       </p>
     </main>
+    <div id="game-over" class="game-over hidden" role="alertdialog" aria-labelledby="game-over-title">
+      <div class="game-over-clown" aria-hidden="true">🤡</div>
+      <h2 id="game-over-title">Game over!</h2>
+      <button id="play-again" class="choice">Play again</button>
+    </div>
 
     <script>
       const props = document.querySelectorAll(".prop");
@@ -229,8 +271,11 @@
       const runAwayButton = document.querySelector("#run-away");
       const restartButton = document.querySelector("#restart");
       const instructions = document.querySelector(".instructions");
+      const gameOverScreen = document.querySelector("#game-over");
+      const playAgainButton = document.querySelector("#play-again");
+      const scaryAnimals = ["🕷️", "🐍", "🦇", "🐻", "🐊", "🦈", "🦂", "🐗"];
       let hearts = 5;
-      let direction = "foyer";
+      let gameOver = false;
 
       function updateHearts() {
         heartsDisplay.textContent = "♥ ".repeat(Math.max(hearts, 0)).trim();
@@ -238,7 +283,6 @@
       }
 
       function updateRoomText(newDirection) {
-        direction = newDirection;
         const roomNames = {
           up: "the attic",
           down: "the cellar",
@@ -249,22 +293,36 @@
         instructions.textContent = `You move ${newDirection} and enter ${roomNames[newDirection]}. Touch something to see what happens!`;
       }
 
+      function showMonster(animal) {
+        monster.textContent = animal;
+        monster.classList.remove("hidden", "pop");
+        void monster.offsetWidth;
+        monster.classList.add("pop");
+      }
+
+      function endGame() {
+        gameOver = true;
+        gameOverScreen.classList.remove("hidden");
+        props.forEach((prop) => { prop.disabled = true; });
+        moveButtons.forEach((button) => { button.disabled = true; });
+        choices.classList.add("hidden");
+        restartButton.classList.add("hidden");
+        playAgainButton.focus();
+      }
+
       props.forEach((prop) => {
         prop.addEventListener("click", () => {
-          if (prop.disabled) return;
+          if (prop.disabled || gameOver) return;
 
-          monster.textContent = prop.dataset.monster;
-          monster.classList.remove("hidden");
+          showMonster(prop.dataset.monster);
           message.textContent = `${prop.dataset.name} jumps out! You lost a heart.`;
           prop.disabled = true;
           prop.dataset.used = "true";
           hearts -= 1;
           updateHearts();
-
           if (hearts === 0) {
-            message.textContent = "The monsters got you! Start a new game to try again.";
-            choices.classList.add("hidden");
-            restartButton.classList.remove("hidden");
+            message.textContent = "The monsters got you!";
+            endGame();
             return;
           }
 
@@ -275,15 +333,42 @@
 
       moveButtons.forEach((button) => {
         button.addEventListener("click", () => {
+          if (gameOver) return;
+
           const directionName = button.dataset.direction;
           updateRoomText(directionName);
-          message.textContent = `You move ${directionName}. The house creaks around you.`;
+          const animal = scaryAnimals[Math.floor(Math.random() * scaryAnimals.length)];
+          showMonster(animal);
           choices.classList.add("hidden");
-          monster.classList.add("hidden");
+
+          if (Math.random() < 0.25) {
+            if (hearts < 5) {
+              hearts += 1;
+              updateHearts();
+              message.textContent = `A scary ${animal} jumps out, but leaves you a heart!`;
+            } else {
+              message.textContent = `A scary ${animal} jumps out! You found a heart, but your hearts are already full.`;
+            }
+            return;
+          }
+
+          const heartsLost = Math.floor(Math.random() * 3) + 1;
+          const actualLoss = Math.min(heartsLost, hearts);
+          hearts -= actualLoss;
+          updateHearts();
+
+          if (hearts === 0) {
+            message.textContent = `A scary ${animal} jumps out and takes your last heart!`;
+            endGame();
+          } else {
+            message.textContent = `A scary ${animal} jumps out! You lose ${actualLoss} ${actualLoss === 1 ? "heart" : "hearts"}.`;
+          }
         });
       });
 
       window.addEventListener("keydown", (event) => {
+        if (gameOver) return;
+
         const map = {
           ArrowUp: "up",
           ArrowDown: "down",
@@ -304,6 +389,8 @@
       });
 
       continueButton.addEventListener("click", () => {
+        if (gameOver) return;
+
         monster.classList.add("hidden");
         choices.classList.add("hidden");
         props.forEach((item) => {
@@ -315,17 +402,24 @@
       });
 
       runAwayButton.addEventListener("click", () => {
-        monster.textContent = "🚪";
-        monster.classList.remove("hidden");
+        gameOver = true;
+        showMonster("🚪");
         message.textContent = "You run out of the haunted house and escape!";
         choices.classList.add("hidden");
         restartButton.classList.remove("hidden");
+        moveButtons.forEach((button) => {
+          button.disabled = true;
+        });
         props.forEach((item) => {
           item.disabled = true;
         });
       });
 
       restartButton.addEventListener("click", () => {
+        window.location.reload();
+      });
+
+      playAgainButton.addEventListener("click", () => {
         window.location.reload();
       });
     </script>
