@@ -138,39 +138,67 @@
         display: grid;
         place-items: center;
         overflow: hidden;
-        font-size: min(90vw, 90vh);
-        filter: drop-shadow(0 0 18px #fa7aff);
-        pointer-events: none;
+        background: #0b0810;
       }
 
       .monster.pop {
         animation: pop-out 500ms ease-out both;
       }
 
+      .monster img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .encounter-next {
+        position: absolute;
+        z-index: 1;
+        bottom: clamp(16px, 4vh, 48px);
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 140px;
+        background: #21142b;
+        font-size: 1.25rem;
+      }
+
+      .encounter-next:hover {
+        transform: translateX(-50%);
+      }
+
       .game-over {
         position: fixed;
         z-index: 10;
         inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        display: grid;
+        grid-template-rows: 1fr auto auto;
+        justify-items: center;
+        align-content: center;
+        padding: 24px;
         gap: 12px;
         overflow: hidden;
-        background: radial-gradient(circle, #542044, #100817 75%);
+        background: #100817;
         color: #fff3df;
         text-align: center;
       }
 
-      .game-over-clown {
-        font-size: min(60vmin, 600px);
-        line-height: 1;
-        animation: clown-pop 700ms ease-out both;
+      .game-over-image {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
 
       .game-over h2 {
+        z-index: 1;
         margin: 0;
         font-size: clamp(2rem, 6vw, 4rem);
+        text-shadow: 0 3px 12px #000;
+      }
+
+      .game-over .choice {
+        z-index: 1;
       }
 
       .hidden { display: none; }
@@ -196,11 +224,6 @@
         to { opacity: 1; transform: scale(1); }
       }
 
-      @keyframes clown-pop {
-        from { opacity: 0; transform: scale(.2) rotate(-12deg); }
-        to { opacity: 1; transform: scale(1) rotate(0); }
-      }
-
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation-duration: .01ms !important; }
       }
@@ -223,21 +246,24 @@
 
       <section class="room" aria-label="A spooky foyer">
         <div class="window" aria-hidden="true">🌙</div>
-        <div id="monster" class="monster hidden" aria-hidden="true"></div>
+        <div id="monster" class="monster hidden" role="dialog" aria-label="Animal encounter">
+          <img id="monster-image" src="" alt="">
+          <button id="next-encounter" class="choice encounter-next hidden" type="button">Next</button>
+        </div>
         <div class="props">
-          <button class="prop" data-monster="🦁" data-name="a roaring lion">
+          <button class="prop" data-image="images/lion.jpg" data-name="a roaring lion">
             <img src="images/lion.jpg" alt="A lion in a dark jungle" loading="lazy">
             Lion
           </button>
-          <button class="prop" data-monster="🐺" data-name="a sneaky wolf">
+          <button class="prop" data-image="images/wolf.jpg" data-name="a sneaky wolf">
             <img src="images/wolf.jpg" alt="A wolf looking at the camera" loading="lazy">
             Wolf
           </button>
-          <button class="prop" data-monster="🦍" data-name="a giant gorilla">
+          <button class="prop" data-image="images/gorilla.jpg" data-name="a giant gorilla">
             <img src="images/gorilla.jpg" alt="A gorilla standing in the jungle" loading="lazy">
             Gorilla
           </button>
-          <button class="prop" data-monster="🐵" data-name="a cheeky monkey">
+          <button class="prop" data-image="images/monkey.jpg" data-name="a cheeky monkey">
             <img src="images/monkey.jpg" alt="A monkey on a tree branch" loading="lazy">
             Monkey
           </button>
@@ -252,10 +278,11 @@
       <button id="restart" class="choice hidden">Play again</button>
       <p class="credits">
         Animal images from the project gallery.
+        Clown photo: <a href="https://commons.wikimedia.org/wiki/File:Sad_Clown_-_Occupy_Wall_St.jpg" target="_blank" rel="noreferrer">charliegolonkiewicz (CC BY 2.0)</a>.
       </p>
     </main>
     <div id="game-over" class="game-over hidden" role="alertdialog" aria-labelledby="game-over-title">
-      <div class="game-over-clown" aria-hidden="true">🤡</div>
+      <img class="game-over-image" src="images/clown.jpg" alt="A realistic painted clown face">
       <h2 id="game-over-title">Game over!</h2>
       <button id="play-again" class="choice">Play again</button>
     </div>
@@ -265,6 +292,8 @@
       const moveButtons = document.querySelectorAll(".move-btn");
       const message = document.querySelector("#message");
       const monster = document.querySelector("#monster");
+      const monsterImage = document.querySelector("#monster-image");
+      const nextEncounterButton = document.querySelector("#next-encounter");
       const heartsDisplay = document.querySelector("#hearts");
       const choices = document.querySelector("#choices");
       const continueButton = document.querySelector("#continue");
@@ -273,9 +302,16 @@
       const instructions = document.querySelector(".instructions");
       const gameOverScreen = document.querySelector("#game-over");
       const playAgainButton = document.querySelector("#play-again");
-      const scaryAnimals = ["🕷️", "🐍", "🦇", "🐻", "🐊", "🦈", "🦂", "🐗"];
+      const scaryAnimals = [
+        { image: "images/creepy-bear.jpg", name: "a creepy bear" },
+        { image: "images/lion.jpg", name: "a roaring lion" },
+        { image: "images/wolf.jpg", name: "a sneaky wolf" },
+        { image: "images/gorilla.jpg", name: "a giant gorilla" },
+        { image: "images/monkey.jpg", name: "a strange monkey" }
+      ];
       let hearts = 5;
       let gameOver = false;
+      let nextEncounterTimer;
 
       function updateHearts() {
         heartsDisplay.textContent = "♥ ".repeat(Math.max(hearts, 0)).trim();
@@ -293,15 +329,29 @@
         instructions.textContent = `You move ${newDirection} and enter ${roomNames[newDirection]}. Touch something to see what happens!`;
       }
 
-      function showMonster(animal) {
-        monster.textContent = animal;
+      function showMonster(image, description) {
+        window.clearTimeout(nextEncounterTimer);
+        monsterImage.src = image;
+        monsterImage.alt = description;
+        nextEncounterButton.classList.add("hidden");
         monster.classList.remove("hidden", "pop");
         void monster.offsetWidth;
         monster.classList.add("pop");
+        nextEncounterTimer = window.setTimeout(() => {
+          nextEncounterButton.classList.remove("hidden");
+          nextEncounterButton.focus();
+        }, 3000);
+      }
+
+      function closeMonster() {
+        window.clearTimeout(nextEncounterTimer);
+        monster.classList.add("hidden");
+        nextEncounterButton.classList.add("hidden");
       }
 
       function endGame() {
         gameOver = true;
+        closeMonster();
         gameOverScreen.classList.remove("hidden");
         props.forEach((prop) => { prop.disabled = true; });
         moveButtons.forEach((button) => { button.disabled = true; });
@@ -314,7 +364,7 @@
         prop.addEventListener("click", () => {
           if (prop.disabled || gameOver) return;
 
-          showMonster(prop.dataset.monster);
+          showMonster(prop.dataset.image, prop.dataset.name);
           message.textContent = `${prop.dataset.name} jumps out! You lost a heart.`;
           prop.disabled = true;
           prop.dataset.used = "true";
@@ -338,16 +388,16 @@
           const directionName = button.dataset.direction;
           updateRoomText(directionName);
           const animal = scaryAnimals[Math.floor(Math.random() * scaryAnimals.length)];
-          showMonster(animal);
+          showMonster(animal.image, animal.name);
           choices.classList.add("hidden");
 
           if (Math.random() < 0.25) {
             if (hearts < 5) {
               hearts += 1;
               updateHearts();
-              message.textContent = `A scary ${animal} jumps out, but leaves you a heart!`;
+              message.textContent = `A scary ${animal.name} jumps out, but leaves you a heart!`;
             } else {
-              message.textContent = `A scary ${animal} jumps out! You found a heart, but your hearts are already full.`;
+              message.textContent = `A scary ${animal.name} jumps out! You found a heart, but your hearts are already full.`;
             }
             return;
           }
@@ -358,12 +408,16 @@
           updateHearts();
 
           if (hearts === 0) {
-            message.textContent = `A scary ${animal} jumps out and takes your last heart!`;
+            message.textContent = `A scary ${animal.name} jumps out and takes your last heart!`;
             endGame();
           } else {
-            message.textContent = `A scary ${animal} jumps out! You lose ${actualLoss} ${actualLoss === 1 ? "heart" : "hearts"}.`;
+            message.textContent = `A scary ${animal.name} jumps out! You lose ${actualLoss} ${actualLoss === 1 ? "heart" : "hearts"}.`;
           }
         });
+      });
+
+      nextEncounterButton.addEventListener("click", () => {
+        closeMonster();
       });
 
       window.addEventListener("keydown", (event) => {
@@ -391,7 +445,7 @@
       continueButton.addEventListener("click", () => {
         if (gameOver) return;
 
-        monster.classList.add("hidden");
+        closeMonster();
         choices.classList.add("hidden");
         props.forEach((item) => {
           if (!item.dataset.used) {
@@ -403,7 +457,7 @@
 
       runAwayButton.addEventListener("click", () => {
         gameOver = true;
-        showMonster("🚪");
+        closeMonster();
         message.textContent = "You run out of the haunted house and escape!";
         choices.classList.add("hidden");
         restartButton.classList.remove("hidden");
