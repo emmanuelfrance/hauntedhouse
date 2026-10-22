@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The Touchy Haunted House</title>
+    <style>
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font: 100%/1.5 sans-serif;
+        background: #1a1127;
+        color: #fff3df;
+      }
+
+      main {
+        width: min(100%, 720px);
+        margin: 0 auto;
+        padding: 24px 16px 40px;
+      }
+
+      h1 {
+        margin-bottom: 8px;
+        color: #f5cc7a;
+      }
+
+      .instructions {
+        margin: 0 0 12px;
+        color: #d3c5e2;
+      }
+
+      .hud {
+        margin: 20px 0 12px;
+        color: #ff91b5;
+        font: bold 1.2rem/1.5 sans-serif;
+      }
+
+      .move-pad {
+        margin: 12px 0 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .move-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .move-btn {
+        padding: 10px 16px;
+        border: 1px solid #d8b1ed;
+        border-radius: 8px;
+        background: #493257;
+        color: #fff3df;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .move-btn:hover {
+        background: #684579;
+      }
+
+      .room {
+        position: relative;
+        display: flex;
+        min-height: 340px;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 34px;
+        overflow: hidden;
+        padding: 32px 18px 24px;
+        border: 4px solid #73518b;
+        border-radius: 180px 180px 12px 12px;
+        background:
+          radial-gradient(ellipse at 50% 100%, #774c72 0 4%, transparent 5%),
+          linear-gradient(#29213e 0 75%, #49334e 75%);
+        box-shadow: 0 0 45px #a855f755, inset 0 0 35px #100b1b;
+      }
+
+      .window {
+        position: absolute;
+        top: 50px;
+        left: 50%;
+        display: grid;
+        width: 92px;
+        height: 112px;
+        place-items: center;
+        transform: translateX(-50%);
+        border: 5px solid #9a78ad;
+        border-radius: 50% 50% 4px 4px;
+        background: linear-gradient(#18243f, #51426b);
+        font-size: 42px;
+      }
+
+      .props {
+        z-index: 1;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 14px;
+      }
+
+      .prop {
+        z-index: 1;
+        width: 132px;
+        min-height: 140px;
+        border: 2px solid #d8b1ed;
+        border-radius: 12px;
+        background: #30233e;
+        color: #fff3df;
+        cursor: pointer;
+        font: inherit;
+        box-shadow: 0 8px 0 #1b1424;
+      }
+
+      .prop img {
+        display: block;
+        width: 100%;
+        height: 92px;
+        margin-bottom: 8px;
+        border-radius: 7px;
+        object-fit: cover;
+      }
+
+      .prop:hover { transform: translateY(-4px); background: #493257; }
+      .prop:focus-visible { outline: 3px solid #f5cc7a; outline-offset: 4px; }
+      .credits { margin-top: 24px; color: #c9bad6; font: .8rem/1.7 sans-serif; }
+      .credits a { color: #e3b9ff; }
+
+      .monster {
+        position: absolute;
+        z-index: 2;
+        top: 65px;
+        left: 50%;
+        font-size: 82px;
+        filter: drop-shadow(0 0 18px #fa7aff);
+        animation: pop-out 500ms ease-out both;
+      }
+
+      .hidden { display: none; }
+      #message { min-height: 1.5em; color: #f5cc7a; font-size: 1.15rem; }
+      .prop:disabled { cursor: default; opacity: .65; }
+
+      .choice {
+        margin: 4px;
+        padding: 10px 16px;
+        border: 1px solid #d8b1ed;
+        border-radius: 8px;
+        background: #493257;
+        color: #fff3df;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .choice:hover { background: #684579; }
+      .choice:focus-visible { outline: 3px solid #f5cc7a; outline-offset: 3px; }
+
+      @keyframes pop-out {
+        from { opacity: 0; transform: translate(-50%, 70px) scale(.2); }
+        to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>The Touchy Haunted House</h1>
+      <p class="instructions">You are in the foyer. Touch something to see what happens!</p>
+      <p id="hearts" class="hud" aria-label="5 hearts">♥ ♥ ♥ ♥ ♥</p>
+
+      <div class="move-pad" aria-label="Move controls">
+        <button class="move-btn" data-direction="up">↑ Up</button>
+        <div class="move-row">
+          <button class="move-btn" data-direction="left">← Left</button>
+          <button class="move-btn" data-direction="down">↓ Down</button>
+          <button class="move-btn" data-direction="right">Right →</button>
+        </div>
+      </div>
+
+      <section class="room" aria-label="A spooky foyer">
+        <div class="window" aria-hidden="true">🌙</div>
+        <div id="monster" class="monster hidden" aria-hidden="true"></div>
+        <div class="props">
+          <button class="prop" data-monster="🦁" data-name="a roaring lion">
+            <img src="images/lion.jpg" alt="A lion in a dark jungle" loading="lazy">
+            Lion
+          </button>
+          <button class="prop" data-monster="🐺" data-name="a sneaky wolf">
+            <img src="images/wolf.jpg" alt="A wolf looking at the camera" loading="lazy">
+            Wolf
+          </button>
+          <button class="prop" data-monster="🦍" data-name="a giant gorilla">
+            <img src="images/gorilla.jpg" alt="A gorilla standing in the jungle" loading="lazy">
+            Gorilla
+          </button>
+          <button class="prop" data-monster="🐵" data-name="a cheeky monkey">
+            <img src="images/monkey.jpg" alt="A monkey on a tree branch" loading="lazy">
+            Monkey
+          </button>
+        </div>
+      </section>
+
+      <p id="message" aria-live="polite">Choose an animal to touch. What could be hiding inside?</p>
+      <div id="choices" class="hidden">
+        <button id="continue" class="choice">Keep exploring</button>
+        <button id="run-away" class="choice">Run away!</button>
+      </div>
+      <button id="restart" class="choice hidden">Play again</button>
+      <p class="credits">
+        Animal images from the project gallery.
+      </p>
+    </main>
+
+    <script>
+      const props = document.querySelectorAll(".prop");
+      const moveButtons = document.querySelectorAll(".move-btn");
+      const message = document.querySelector("#message");
+      const monster = document.querySelector("#monster");
+      const heartsDisplay = document.querySelector("#hearts");
+      const choices = document.querySelector("#choices");
+      const continueButton = document.querySelector("#continue");
+      const runAwayButton = document.querySelector("#run-away");
+      const restartButton = document.querySelector("#restart");
+      const instructions = document.querySelector(".instructions");
+      let hearts = 5;
+      let direction = "foyer";
+
+      function updateHearts() {
+        heartsDisplay.textContent = "♥ ".repeat(Math.max(hearts, 0)).trim();
+        heartsDisplay.setAttribute("aria-label", `${hearts} hearts`);
+      }
+
+      function updateRoomText(newDirection) {
+        direction = newDirection;
+        const roomNames = {
+          up: "the attic",
+          down: "the cellar",
+          left: "the left hall",
+          right: "the right hall",
+          foyer: "the foyer"
+        };
+        instructions.textContent = `You move ${newDirection} and enter ${roomNames[newDirection]}. Touch something to see what happens!`;
+      }
+
+      props.forEach((prop) => {
+        prop.addEventListener("click", () => {
+          if (prop.disabled) return;
+
+          monster.textContent = prop.dataset.monster;
+          monster.classList.remove("hidden");
+          message.textContent = `${prop.dataset.name} jumps out! You lost a heart.`;
+          prop.disabled = true;
+          prop.dataset.used = "true";
+          hearts -= 1;
+          updateHearts();
+
+          if (hearts === 0) {
+            message.textContent = "The monsters got you! Start a new game to try again.";
+            choices.classList.add("hidden");
+            restartButton.classList.remove("hidden");
+            return;
+          }
+
+          message.textContent += " What will you do?";
+          choices.classList.remove("hidden");
+        });
+      });
+
+      moveButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const directionName = button.dataset.direction;
+          updateRoomText(directionName);
+          message.textContent = `You move ${directionName}. The house creaks around you.`;
+          choices.classList.add("hidden");
+          monster.classList.add("hidden");
+        });
+      });
+
+      window.addEventListener("keydown", (event) => {
+        const map = {
+          ArrowUp: "up",
+          ArrowDown: "down",
+          ArrowLeft: "left",
+          ArrowRight: "right"
+        };
+
+        if (!map[event.key]) return;
+
+        event.preventDefault();
+        const targetButton = Array.from(moveButtons).find(
+          (button) => button.dataset.direction === map[event.key]
+        );
+
+        if (targetButton) {
+          targetButton.click();
+        }
+      });
+
+      continueButton.addEventListener("click", () => {
+        monster.classList.add("hidden");
+        choices.classList.add("hidden");
+        props.forEach((item) => {
+          if (!item.dataset.used) {
+            item.disabled = false;
+          }
+        });
+        message.textContent = "You take a breath. Choose another animal—or move around the house!";
+      });
+
+      runAwayButton.addEventListener("click", () => {
+        monster.textContent = "🚪";
+        monster.classList.remove("hidden");
+        message.textContent = "You run out of the haunted house and escape!";
+        choices.classList.add("hidden");
+        restartButton.classList.remove("hidden");
+        props.forEach((item) => {
+          item.disabled = true;
+        });
+      });
+
+      restartButton.addEventListener("click", () => {
+        window.location.reload();
+      });
+    </script>
+  </body>
+</html>
