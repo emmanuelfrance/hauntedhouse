@@ -251,21 +251,17 @@
           <button id="next-encounter" class="choice encounter-next hidden" type="button">Next</button>
         </div>
         <div class="props">
-          <button class="prop" data-image="images/lion.jpg" data-name="a roaring lion">
+          <button class="prop" data-image="images/lion-face.jpg" data-name="a lion staring right at you">
             <img src="images/lion.jpg" alt="A lion in a dark jungle" loading="lazy">
             Lion
           </button>
-          <button class="prop" data-image="images/wolf.jpg" data-name="a sneaky wolf">
+          <button class="prop" data-image="images/wolf-face.jpg" data-name="a wolf staring right at you">
             <img src="images/wolf.jpg" alt="A wolf looking at the camera" loading="lazy">
             Wolf
           </button>
-          <button class="prop" data-image="images/gorilla.jpg" data-name="a giant gorilla">
+          <button class="prop" data-image="images/gorilla-teeth.jpg" data-name="a snarling gorilla">
             <img src="images/gorilla.jpg" alt="A gorilla standing in the jungle" loading="lazy">
             Gorilla
-          </button>
-          <button class="prop" data-image="images/monkey.jpg" data-name="a cheeky monkey">
-            <img src="images/monkey.jpg" alt="A monkey on a tree branch" loading="lazy">
-            Monkey
           </button>
         </div>
       </section>
@@ -277,7 +273,10 @@
       </div>
       <button id="restart" class="choice hidden">Play again</button>
       <p class="credits">
-        Animal images from the project gallery.
+        Animal photos:
+        <a href="https://www.flickr.com/photos/8070463@N03/5625262964" target="_blank" rel="noreferrer">lion by Tambako the Jaguar (CC BY-ND 2.0)</a>,
+        <a href="https://www.flickr.com/photos/8070463@N03/13915120574" target="_blank" rel="noreferrer">wolf by Tambako the Jaguar (CC BY-ND 2.0)</a>,
+        <a href="https://commons.wikimedia.org/wiki/File:Mountain_gorilla_(Gorilla_beringei_beringei)_female_teeth.jpg" target="_blank" rel="noreferrer">gorilla by Charles J. Sharp (CC BY-SA 4.0)</a>.
         Clown photo: <a href="https://commons.wikimedia.org/wiki/File:Sad_Clown_-_Occupy_Wall_St.jpg" target="_blank" rel="noreferrer">charliegolonkiewicz (CC BY 2.0)</a>.
       </p>
     </main>
@@ -303,11 +302,9 @@
       const gameOverScreen = document.querySelector("#game-over");
       const playAgainButton = document.querySelector("#play-again");
       const scaryAnimals = [
-        { image: "images/creepy-bear.jpg", name: "a creepy bear" },
-        { image: "images/lion.jpg", name: "a roaring lion" },
-        { image: "images/wolf.jpg", name: "a sneaky wolf" },
-        { image: "images/gorilla.jpg", name: "a giant gorilla" },
-        { image: "images/monkey.jpg", name: "a strange monkey" }
+        { image: "images/lion-face.jpg", name: "a lion staring right at you" },
+        { image: "images/wolf-face.jpg", name: "a wolf staring right at you" },
+        { image: "images/gorilla-teeth.jpg", name: "a snarling gorilla" }
       ];
       let hearts = 5;
       let gameOver = false;
