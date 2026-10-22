@@ -148,7 +148,9 @@
       .monster img {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
+        object-position: center;
+        background: #0b0810;
       }
 
       .encounter-next {
@@ -252,15 +254,15 @@
         </div>
         <div class="props">
           <button class="prop" data-image="images/lion-face.jpg" data-name="a lion staring right at you">
-            <img src="images/lion.jpg" alt="A lion in a dark jungle" loading="lazy">
+            <img src="images/lion-face.jpg" alt="Close-up portrait of a lion looking toward the camera" loading="lazy">
             Lion
           </button>
           <button class="prop" data-image="images/wolf-face.jpg" data-name="a wolf staring right at you">
-            <img src="images/wolf.jpg" alt="A wolf looking at the camera" loading="lazy">
+            <img src="images/wolf-face.jpg" alt="Close-up portrait of a wolf looking toward the camera" loading="lazy">
             Wolf
           </button>
           <button class="prop" data-image="images/gorilla-teeth.jpg" data-name="a snarling gorilla">
-            <img src="images/gorilla.jpg" alt="A gorilla standing in the jungle" loading="lazy">
+            <img src="images/gorilla-teeth.jpg" alt="A gorilla facing the camera with its teeth showing" loading="lazy">
             Gorilla
           </button>
         </div>
